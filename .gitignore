@@ -1,0 +1,18 @@
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+
+# RStudio files
+.Rproj.user/
+
+# Big files
+data/shapefile/
+data/raster/
+ignore/
+data.rar
+
+.Rproj.user
+
