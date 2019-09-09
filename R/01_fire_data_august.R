@@ -44,7 +44,7 @@ writeOGR(uc.amz,
          driver="ESRI Shapefile", overwrite_layer = TRUE)
 
 # 2. reading fire data ####
-fire19 <- readOGR("data/shapefile/fire_modis2016_2019/fire_nrt_M6_67612.shp")
+fire19 <- readOGR("data/shapefile/fire_modis2019/fire_nrt_M6_71094.shp")
 #fire <- readOGR("data/shapefile/fire_modis2016_2019/fire_archive_M6_67612.shp")
 
 ## setting the same projection
@@ -69,8 +69,10 @@ range(fire.amz80$DATE)
 
 table(fire.amz80$DATE>"2019-07-31")
 
-# selecting only data from august 2019 and type 0
-fire.amz80.aug <- fire.amz80[fire.amz80$DATE>"2019-07-31",] 
+# selecting only data from august 2019 
+fire.amz80.aug <- fire.amz80[fire.amz80$DATE<"2019-09-01",] 
+
+range(fire.amz80.aug$DATE)
 
 # Fire per municipality and UC
 fire.muni <- point.in.poly(fire.amz80.aug, muni.amz)
