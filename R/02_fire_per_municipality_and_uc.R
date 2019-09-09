@@ -9,7 +9,12 @@ library(maps)
 library(stringr)
 
 # reading legal amazon shp
-amz <- readOGR("data/shapefile/brazilian_legal_amazon/brazilian_legal_amazon.shp")
+amz <- readOGR("data/shapefile/brazilian_legal_amazon/brazilian_legal_amazon.shp",                
+               use_iconv = TRUE, 
+               encoding = "UTF-8")
+uc.amz <-readOGR("data/shapefile/outputs/uc_amz.shp",
+                 use_iconv = TRUE, 
+                 encoding = "UTF-8")
 # uc
 fire.uc <- readOGR("data/shapefile/outputs/fire_amz80_uc.shp", 
               use_iconv = TRUE, 
@@ -22,9 +27,13 @@ fire.muni <- readOGR("data/shapefile/outputs/fire_amz80_muni.shp",
 # 1. Creating raster from fire data ####
 # reading fire shapefile (legal amazon, >80 confidence)
 fire80 <- readOGR("data/shapefile/outputs/fire_amz80.shp")
-fire80$DATE <- ymd(fire80$DATE)
+#fire80$DATE <- ymd(fire80$DATE)
 
 range(fire80$DATE)
+
+dim(fire80)
+
+Nfire <- nrow(fire80)
 
 # remove fire type NA
 head(fire80)
@@ -54,6 +63,12 @@ plot(amz, col=NA, lwd=2, add=TRUE)
 
 # 2. Calculating fire per UC ####
 head(fire.uc)
+head(uc.amz)
+
+Nuc.fire <- length(unique(fire.uc$nome))
+Nuc.amz <- length(unique(uc.amz$nome))
+
+Nuc.fire/Nuc.amz
 
 dim(fire80)
 
@@ -75,12 +90,17 @@ fire.uc.df$type[str_detect(fire.uc.df$nome, uc.type[i])] <- uc.type[i]
 
 fire.uc.df
 
+sum(fire.uc.df$SCAN)/Nfire # 5% do fogo em UC
+
+table(fire.uc.df$type)
+
 fire.uctype <- aggregate(SCAN ~ type, data=fire.uc.df, FUN=sum) 
 fire.uctype <- fire.uctype[order(fire.uctype$SCAN, decreasing=TRUE),]
 
 fire.uctype
 
-sum(fire.uctype$SCAN) #1,029
+sum(fire.uctype$SCAN) #1,207
+
 
 # 2. Calculating fire per municipality ####
 head(fire.muni)
