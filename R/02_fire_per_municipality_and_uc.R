@@ -45,14 +45,23 @@ rast <- raster()
 my_ext <- extent(fire80)
 
 extent(rast) <- my_ext
-ncol(rast)
-nrow(rast)
 
-fire.rast <- rasterize(fire80, rast, fire80$id)
+r <- rasterize(fire80, rast, fire80$id, fun='sum')
+
+# inicial resolution
+res_i <- res(r)
+# final resolution
+res_j <- c(0.008, 0.008)
+# desired factor
+fact <- round(res_i/res_j, 2)
+
+fire.rast <- disaggregate(r, fact=fact)
+
+plot(fire.rast)
 
 # write raster
 writeRaster(fire.rast,
-            "data/raster/fire_raster.tif")
+            "data/raster/fire_raster.tif", overwrite=TRUE)
 
 my_green <- rgb(53, 136, 86, max = 255, alpha = 100)
 # ploting fire map
