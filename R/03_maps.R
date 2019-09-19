@@ -2,11 +2,8 @@ library(ggplot2)
 library(viridis)
 ###### Making a cool map #####
 library(tidyverse)
-<<<<<<< HEAD
 library(sf)
 library(dplyr)
-=======
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
 library(maps)
 library(ggrepel)
 library(broom) # to use tidy
@@ -22,11 +19,10 @@ library(rgeos)
 # head(g1)
 # head(g2)
 
-<<<<<<< HEAD
+
 ##### 1. reading shapefiles ####
-=======
+
 # shapefiles
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
 amz <- readOGR("data/shapefile/brazilian_legal_amazon/brazilian_legal_amazon.shp", 
                use_iconv = TRUE, 
                encoding = "UTF-8")
@@ -40,15 +36,13 @@ fire.muni <- readOGR("data/shapefile/outputs/fire_amz80_muni.shp",
                      use_iconv = TRUE, 
                      encoding = "UTF-8")
 
-<<<<<<< HEAD
+
 fire <- raster("data/raster/fire_raster.tif")
 
 plot(fire)
 
 fire
 
-=======
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
 sp <- readOGR("data/shapefile/pontos_ameacadas_atualizado_portaria_443_2014/pontos_ameacadas_atualizado_portaria_443_2014.shp")
 
 proj4string(sp)
@@ -63,16 +57,12 @@ sp.amz <- sp[amz,]
 
 head(sp.amz)
 
-<<<<<<< HEAD
-
 plot(sp.amz)
 
 
 #### 2. Checking species data #### 
 
 # 2.1 checking endemic species ####
-=======
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
 sp.fora <- sp[!sp$codigocncf%in%sp.amz$codigocncf,]
 
 sum(sp.fora$codigocncf%in%sp.amz$codigocncf)
@@ -84,20 +74,17 @@ sp.tot <- unique(sp.amz$nome_cient) %>% length()
 
 sp.restritas/sp.tot
 
-<<<<<<< HEAD
 nrow(sp.fora)+nrow(sp.amz)
 nrow(sp)
-=======
+
 dim(sp.fora)+dim(sp.amz)
 dim(sp)
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
 
 sp.amz$nome_cient <- as.character(sp.amz$nome_cient)
 
 listasp.amz <- as.character(unique(sp.amz$nome_cient))
 listasp.all <- as.character(unique(sp$nome_cient))
 
-<<<<<<< HEAD
 registros.amz <- as.data.frame(table(sp.amz$nome_cient))
 
 head(registros.amz)
@@ -114,7 +101,6 @@ sp.aoo <- raster::buffer(sp.amz, width=r.aoo, dissolve=TRUE)
 plot(sp.aoo)
 
 #### 3. Creating fire buffer #### 
-=======
 registros.all <- as.data.frame(table(sp.amz$nome_cient))
 names(registros.all)[2] <- "Freq.all"
 
@@ -122,16 +108,12 @@ dim(sp.amz)
 
 head(sp)
 
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
 # creating buffer
 c1 <- 1
 c2 <- 9
 r1 <- sqrt(c1/pi)*1000
 r2 <- sqrt(c2/pi)*1000
-<<<<<<< HEAD
 
-=======
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
 area10km <- pi*(10^2)
 
 b1 <- 2000
@@ -156,8 +138,6 @@ fire.10km <- buffer(fire.muni, width = b3, dissolve = TRUE)
 # length(unique(sp.5km$nome_cient))
 # dim(sp.5km)
 
-<<<<<<< HEAD
-
 #### 4. Species inside fire #### 
 
 # 4.1 N of records inside fire ####
@@ -177,7 +157,7 @@ nsp.fogo <- nrow(registros.fogo)
 nsp.fogo/nsp.amz
 
 registros$prop <- registros$Freq.fire/registros$Freq
-=======
+
 sp.10km <- sp.amz[fire.10km,]
 length(unique(sp.10km$nome_cient))
 dim(sp.10km)
@@ -192,14 +172,12 @@ sp.fogo <- nrow(registros.fogo)
 sp.fogo/sp.amz
 
 registros$prop <- registros$Freq/registros$Freq.all
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
 
 length(registros$Var1[registros$prop==1])
 
 lista.sp <- sp.10km[!duplicated(sp.10km$nome_cient), ]
 table(lista.sp$categoria)
 
-<<<<<<< HEAD
 # 4.2 AOO inside fire ####
 
 # calculando aoo dentro do fogo
@@ -232,8 +210,6 @@ aoo.fogo$area/sp.aoo$area # 26% da area total dentro do fogo
 # For each field, get area per soil type
 aggregate(area~fire.10km + sp.aoo, data=aoo.fogo, FUN=sum)
 
-=======
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
 # testing plot
 plot(fire.10km, col="darkred")
 # plot(fire.5km, col="orange", add=TRUE)
@@ -242,15 +218,12 @@ plot(fire.10km, col="darkred")
 
 # sp.9km2.df <- as.data.frame(sp.9km2) 
 
-<<<<<<< HEAD
 #### 5. creating the maps ####
 
 
 # 5.1 Fire by municipality ####
-=======
 #### creating map ####
 
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
 fire.muni.df <- aggregate(SCAN ~ NOME_MUNI, data=fire.muni, FUN=length)
 
 head(fire.muni.df)
@@ -281,11 +254,8 @@ dim(fire.muni.df)
 head(fire.muni.df)
 names(fire.muni.df)[2] <- "Fire_freq"
 
-<<<<<<< HEAD
-=======
 dim(muni.amz)
 
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
 muni.amz2 <- merge(as.data.frame(muni.amz), fire.muni.df[,1:2], by="NOME_MUNI", 
                    all.x=TRUE, all.y=FALSE)
 
@@ -321,23 +291,18 @@ ggplot(muni.tidy, aes(x = long, y = lat, group = group, fill=Fire_freq)) +
   labs(title = "Fire in the Brazilian Amazon") 
   # theme(plot.title = element_text(margin = margin(t = 60, b = -40)))
 
-<<<<<<< HEAD
 mybreaks <- c(200, 500, 1000, 1500)
 
-=======
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
 head(fire.muni.df)
 head(muni.tidy)
 
 head(fire.10km)
 
-<<<<<<< HEAD
 #visualize records
 
 #png("figs/Fire_map.png", res=300, width=1800, height=1600)
 ggplot() +
   geom_polygon(data=amz, aes(long, lat, group=group), fill="darkgreen", alpha=0.3) +
-=======
 fire.tidy <- tidy(fire.10km)
 
 mybreaks <- c(200, 500, 1000, 1500)
@@ -353,22 +318,18 @@ ggplot() +
                aes(long, lat, group=group), alpha=0.3) +
   geom_polygon(data=uc.amz[uc.amz$nome=="ESTAÇÃO ECOLÓGICA DA TERRA DO MEIO",], 
                aes(long, lat, group=group), alpha=0.3) +
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
   geom_point(aes(x=x, y=y, size=Fire_freq, col=Fire_freq),
              data=fire.muni.df, shape=20, stroke=FALSE) +
   geom_point(aes(x=POINT_X, y=POINT_Y),
              data=as.data.frame(sp.10km), shape=3, stroke=FALSE) +
-<<<<<<< HEAD
   geom_point(aes(x=POINT_X, y=POINT_Y),
              data=as.data.frame(sp.10km), shape=3, stroke=FALSE) +
   # geom_point(aes(x=lon, y=lat, size=riq, color=riq, alpha=riq), shape=20, stroke=FALSE) +
   #scale_color_gradient(low="orange", high="red") +
   scale_color_gradientn(colours = heat.colors(4)[4:1], name="Fire frequency",  breaks=mybreaks) +
-=======
   # geom_point(aes(x=lon, y=lat, size=riq, color=riq, alpha=riq), shape=20, stroke=FALSE) +
   #scale_color_gradient(low="orange", high="red") +
   scale_color_gradientn(colours = heat.colors(5)[5:1]) +
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
   #scale_color_distiller(palette = "Reds", direction = 1, name="Fire frequency") +
   scale_size_continuous(name="Fire frequency",  breaks=mybreaks) +
   #scale_size_continuous(name="Number of fires") +
@@ -378,7 +339,6 @@ ggplot() +
   coord_map() + 
   #guides( colour = guide_legend()) +
   ggtitle("Fire activity in the Brazilian Amazon")
-<<<<<<< HEAD
 #dev.off()
 
 
@@ -412,7 +372,6 @@ ggplot() +
              data=as.data.frame(fire.muni), shape=46, stroke=FALSE, fill="darkred", colour="darkred") +
   geom_point(aes(x=POINT_X, y=POINT_Y),
              data=as.data.frame(sp.10km), shape=3, stroke=FALSE) +
-=======
   # theme(
   #   legend.position = c(0.15, 0.2),
   #   text = element_text(color = "#22211d"),
@@ -445,7 +404,6 @@ ggplot() +
   #scale_size_continuous(name="Fire frequency",  breaks=mybreaks) +
   #scale_size_continuous(name="Number of fires") +
   #scale_alpha_continuous(name="Number of fires", breaks=mybreaks) +
->>>>>>> df097725e3a0b837324251c5f37b045efb07b747
   theme_minimal()  + 
   labs(x="Longitude", y="Latitude") +
   coord_map() + 
