@@ -1,3 +1,4 @@
+# loading packages
 library(ggplot2)
 library(viridis)
 ###### Making a cool map #####
@@ -11,6 +12,8 @@ library(broom) # to use tidy
 library(rgdal)
 library(raster)
 library(rgeos)
+
+library(caret)
 
 # glaucia data
 # g1 <- read.csv("data/Especies_fogo01.csv", sep=";")
@@ -39,9 +42,9 @@ fire.muni <- readOGR("data/shapefile/outputs/fire_amz80_muni.shp",
 
 fire <- raster("data/raster/fire_raster.tif")
 
-plot(fire)
-
-fire
+# plot(amz)
+# plot(uc.amz, add=TRUE, col="grey60")
+# plot(fire, col=heat.colors(10)[5:1], add=TRUE)
 
 sp <- readOGR("data/shapefile/pontos_ameacadas_atualizado_portaria_443_2014/pontos_ameacadas_atualizado_portaria_443_2014.shp")
 
@@ -58,7 +61,6 @@ sp.amz <- sp[amz,]
 head(sp.amz)
 
 plot(sp.amz)
-
 
 #### 2. Checking species data #### 
 
@@ -86,11 +88,9 @@ listasp.amz <- as.character(unique(sp.amz$nome_cient))
 listasp.all <- as.character(unique(sp$nome_cient))
 
 registros.amz <- as.data.frame(table(sp.amz$nome_cient))
+names(registros.amz)[2] <- "total"
 
 head(registros.amz)
-
-# creating column w/ AOO - 4km2
-registros.amz$aoo.tot.km2 <- registros.amz$Freq*4
 
 # 2.2 Calculating AOO ####
 c.aoo <- 4
@@ -109,34 +109,28 @@ dim(sp.amz)
 head(sp)
 
 # creating buffer
-c1 <- 1
-c2 <- 9
-r1 <- sqrt(c1/pi)*1000
-r2 <- sqrt(c2/pi)*1000
+# c1 <- 1
+# c2 <- 9
+# r1 <- sqrt(c1/pi)*1000
+# r2 <- sqrt(c2/pi)*1000
+# area10km <- pi*(10^2)
+# b1 <- 2000
+# b2 <- 5000
 
-area10km <- pi*(10^2)
-
-b1 <- 2000
-b2 <- 5000
 b3 <- 10000
-
-# fire.2km <- buffer(fire.muni, width = b1, dissolve = TRUE)
-# fire.5km <- buffer(fire.muni, width = b2, dissolve = TRUE)
 fire.10km <- buffer(fire.muni, width = b3, dissolve = TRUE)
 
-# fire.1km2 <- buffer(fire.muni, width = r1, dissolve = TRUE)
-# fire.9km2 <- buffer(fire.muni, width = r2, dissolve = TRUE)
+# 3.1. Creating multiple buffers ####
 
-# sp inside fire only buffer 9km
-# buf_list <- list(fire.2km, fire.5km, fire.10km)
+bufs <- function(b) {
+  my.buf <- buffer(fire.muni, width=b, dissolve=TRUE)
+}
 
-# sp.2km <- sp.amz[fire.2km,]
-# length(unique(sp.2km$nome_cient))
-# dim(sp.2km)
-# 
-# sp.5km <- sp.amz[fire.5km,]
-# length(unique(sp.5km$nome_cient))
-# dim(sp.5km)
+bs <- c(1000, 1500, 2000, 3000, 5000, 7000, 10000, 14000)
+
+fire.bufs <- lapply(bs, bufs) 
+
+fire.bufs
 
 #### 4. Species inside fire #### 
 
@@ -158,22 +152,81 @@ nsp.fogo/nsp.amz
 
 registros$prop <- registros$Freq.fire/registros$Freq
 
-sp.10km <- sp.amz[fire.10km,]
-length(unique(sp.10km$nome_cient))
-dim(sp.10km)
-registros.fogo <- as.data.frame(table(sp.10km$nome_cient))
+# 4.1. para os diferentes tamanhos de buffer ####
+sp.bufs <- list()
+for(i in 1:length(bs)){
+  sp.bufs[[i]] <- sp.amz[fire.bufs[[i]],]
+}
 
-# comparando os registros dentro e fora do fogo
-registros <- merge(registros.all, registros.fogo, by="Var1")
+sp.buf.n <- sapply(sp.bufs, function(x) length(unique(x$nome_cient)))
 
-sp.amz <- nrow(registros.all)
-sp.fogo <- nrow(registros.fogo)
+lista.sp.buf <- lapply(sp.bufs, function(x) unique(x$nome_cient))
+#lista.sp.buf[[7]]%in%lista.sp.buf[[8]]
 
-sp.fogo/sp.amz
+sp.buf.df <- data.frame(buffer=bs/1000, 
+                        prop.sp=round(sp.buf.n/nsp.amz, 2)*100)
 
-registros$prop <- registros$Freq/registros$Freq.all
 
-length(registros$Var1[registros$prop==1])
+sp.buf.df
+
+mod <- lm(prop.sp ~ poly(buffer, 2), data=sp.buf.df)
+mod.c <- coef(mod)
+pred <- data.frame(buffer=1:15)
+predicted.intervals <- predict(mod, pred,
+                               interval='confidence',
+                               level=0.99)
+
+plot(sp.buf.df, las=1, bty='l', 
+     xlab="Buffer size (km)", 
+     ylab="Percentage of species affected")
+lines(pred$buffer,predicted.intervals[,1],col='tomato',lwd=2)
+lines(pred$buffer,predicted.intervals[,2],col='black',lwd=1, lty=1)
+lines(pred$buffer,predicted.intervals[,3],col='black',lwd=1, lty=1)
+abline(v=10, col="grey80", lty=2)
+abline(h=50, col="grey80", lty=2)
+
+reg.bufs <- list()
+for(i in 1:length(bs)){
+reg.bufs[[i]] <-as.data.frame(table(sp.bufs[[i]]$nome_cient))
+#names(reg.bufs[[i]])[2] <- paste0("buffer_", bs[i])
+reg.bufs[[i]]$Var1 <- as.character(registros.bufs[[i]]$Var1)
+}
+
+reg.bufs.df <- bind_rows(reg.bufs, .id="buffer") %>%
+  merge(., registros.amz, by="Var1", sort=FALSE)
+
+reg.bufs.df$prop <- reg.bufs.df$Freq/reg.bufs.df$total
+head(reg.bufs.df)
+
+props <- c(0, 0.29, 0.49, 0.74, 0.89)
+prop.mat <- matrix(NA, nrow=length(bs), ncol=length(props)+1)
+prop.mat[,1] <- bs/1000
+colnames(prop.mat) <- c("buffer", "1", "30","50", "75", "90")
+for(i in 1:length(props)){
+  prop.mat[,i+1] <- aggregate(reg.bufs.df$prop, list(reg.bufs.df$buffer), 
+                              function(x) sum(x>props[i]))$x
+}
+
+cores <- c("grey30", wesanderson::wes_palette("Zissou1", 4, type = "continuous"))
+#cores <- wesanderson::wes_palette("Zissou1", 5, type = "continuous")
+
+png("figs/species_buffer.png", res=300, width=1800, height=1400)
+matplot(y=prop.mat[,-1], x=prop.mat[,1], type='l',  
+     las=1, bty='l', lty=1,
+     xlab="Buffer size (km)", 
+     ylab="Species with records inside fire", col=cores)
+abline(v=10, col="grey80", lty=2)
+abline(h=63, col="grey80", lty=2)
+matplot(y=prop.mat[,-1], x=prop.mat[,1], type='p',  
+        las=1, pch=19,
+        xlab="Buffer size (km)", 
+        ylab="Species with records inside fire", add=TRUE, 
+        col=cores)
+legend("topleft", legend=c("at least one record", paste(colnames(prop.mat)[c(-1, -2)], "%")), 
+       pch=19, lty=1, col=cores, bty='n')
+dev.off()
+
+Nreg.buf <- bind_cols(registros.bufs[8:1])
 
 lista.sp <- sp.10km[!duplicated(sp.10km$nome_cient), ]
 table(lista.sp$categoria)
@@ -183,8 +236,6 @@ table(lista.sp$categoria)
 # calculando aoo dentro do fogo
 
 head(registros)
-
-sum(registros$aoo.tot.km2)
 
 sp.aoo
 fire.10km
@@ -205,10 +256,6 @@ sp.aoo$area <- area(sp.aoo) / 1000000
 aoo.fogo$area <- area(aoo.fogo) / 1000000
 
 aoo.fogo$area/sp.aoo$area # 26% da area total dentro do fogo
-
-
-# For each field, get area per soil type
-aggregate(area~fire.10km + sp.aoo, data=aoo.fogo, FUN=sum)
 
 # testing plot
 plot(fire.10km, col="darkred")
