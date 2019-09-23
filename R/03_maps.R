@@ -88,9 +88,25 @@ listasp.amz <- as.character(unique(sp.amz$nome_cient))
 listasp.all <- as.character(unique(sp$nome_cient))
 
 registros.amz <- as.data.frame(table(sp.amz$nome_cient))
-names(registros.amz)[2] <- "total"
+names(registros.amz) <- c("nome_cient", "total")
 
 head(registros.amz)
+
+head(sp.amz)
+
+head()
+
+df <- sp.amz@data 
+
+head(df)
+
+nome.cat <- df[!duplicated(df$nome_cient), c('nome_cient', 'categoria')]
+
+head(nome.cat)
+
+write.table(nome.cat, "results/especie_categoria.csv",
+            row.names=FALSE,
+            col.names=TRUE)
 
 # 2.2 Calculating AOO ####
 c.aoo <- 4
@@ -189,23 +205,37 @@ reg.bufs <- list()
 for(i in 1:length(bs)){
 reg.bufs[[i]] <-as.data.frame(table(sp.bufs[[i]]$nome_cient))
 #names(reg.bufs[[i]])[2] <- paste0("buffer_", bs[i])
-reg.bufs[[i]]$Var1 <- as.character(registros.bufs[[i]]$Var1)
+reg.bufs[[i]]$Var1 <- as.character(reg.bufs[[i]]$Var1)
+names(reg.bufs[[i]])[1] <- "nome_cient" 
 }
 
 reg.bufs.df <- bind_rows(reg.bufs, .id="buffer") %>%
-  merge(., registros.amz, by="Var1", sort=FALSE)
+    merge(., registros.amz, by="nome_cient", sort=FALSE) %>%
+    merge(., nome.cat, by="nome_cient", sort=FALSE)
 
 reg.bufs.df$prop <- reg.bufs.df$Freq/reg.bufs.df$total
 head(reg.bufs.df)
 
+write.table(reg.bufs.df, "results/records_buffer.csv",
+            col.names=TRUE, row.names=FALSE, sep=",")
+
 props <- c(0, 0.29, 0.49, 0.74, 0.89)
-prop.mat <- matrix(NA, nrow=length(bs), ncol=length(props)+1)
+prop.mat <- as.data.frame(matrix(NA, nrow=length(bs)*3, ncol=length(props)+2))
 prop.mat[,1] <- bs/1000
-colnames(prop.mat) <- c("buffer", "1", "30","50", "75", "90")
+prop.mat[,2] <- rep(c("CR", "EN", "VU"), each=length(bs))
+colnames(prop.mat) <- c("buffer", "categoria", "1", "30","50", "75", "90")
 for(i in 1:length(props)){
-  prop.mat[,i+1] <- aggregate(reg.bufs.df$prop, list(reg.bufs.df$buffer), 
-                              function(x) sum(x>props[i]))$x
+    prop.mat[,i+2] <- aggregate(reg.bufs.df$prop,
+                                list(reg.bufs.df$buffer, reg.bufs.df$categoria),
+                                drop=FALSE,
+                                function(x) sum(x>props[i]))$x
 }
+
+prop.mat
+
+write.table(prop.mat, "results/proportion_of_species_records_per_buffer.csv",
+            col.names=TRUE, row.names=FALSE, sep=",")
+
 
 cores <- c("grey30", wesanderson::wes_palette("Zissou1", 4, type = "continuous"))
 #cores <- wesanderson::wes_palette("Zissou1", 5, type = "continuous")
