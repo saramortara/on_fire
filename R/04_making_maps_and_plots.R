@@ -14,6 +14,7 @@ library(raster)
 library(rgeos)
 
 library(caret)
+library(reshape2)
 
 ##### 1. reading shapefiles ####
 
@@ -28,6 +29,9 @@ uc.amz <- readOGR("data/shapefile/outputs/uc_amz.shp",
                     use_iconv = TRUE, 
                     encoding = "UTF-8")
 fire.muni <- readOGR("data/shapefile/outputs/fire_amz80_muni.shp",
+                     use_iconv = TRUE, 
+                     encoding = "UTF-8")
+sp.10km <- readOGR("data/shapefile/outputs/sp_10km.shp",
                      use_iconv = TRUE, 
                      encoding = "UTF-8")
 
@@ -62,34 +66,45 @@ prop.mat2 <-  read.csv("results/proportion_of_species_records_per_buffer2.csv")
 names(prop.mat) <-  gsub("X", "", names(prop.mat))
 names(prop.mat2) <-  gsub("X", "", names(prop.mat2))
 
-prop.mat
+## creating data.frames
+
 prop.mat2
+
+df <- melt(prop.mat, id.vars="buffer")
+df2 <- melt(prop.mat2[,-1], id.vars="categoria")
+df2$buffer <- prop.mat2$buffer
+
+head(df2)
+
 
 #### 1. making plots ####
 
 cores <- c("grey30", wesanderson::wes_palette("Zissou1", 4, type = "continuous"))
 #cores <- wesanderson::wes_palette("Zissou1", 5, type = "continuous")
 
-png("figs/species_buffer.png", res=300, width=1800, height=1400)
-matplot(y=prop.mat[,-1], x=prop.mat[,1], type='l',  
-     las=1, bty='l', lty=1,
-     xlab="Buffer size (km)", 
-     ylab="Species with records inside fire", col=cores)
-abline(v=10, col="grey80", lty=2)
-abline(h=63, col="grey80", lty=2)
-matplot(y=prop.mat[,-1], x=prop.mat[,1], type='p',  
-        las=1, pch=19,
-        xlab="Buffer size (km)", 
-        ylab="Species with records inside fire", add=TRUE, 
-        col=cores)
-legend("topleft", legend=c("at least one record", paste(colnames(prop.mat)[c(-1, -2)], "%")), 
-       pch=19, lty=1, col=cores, bty='n')
-dev.off()
+## barplot
+bp <- df2[df2$variable!=75 & df2$buffer==10,] %>%
+    ggplot(., aes(fill=categoria, x=variable, y=value/126)) +
+    geom_bar(position="fill", stat="identity") +
+    labs(x="Loss of species records",
+         y="Proportion of species in threatened categories") +
+    theme_minimal()
 
-Nreg.buf <- bind_cols(registros.bufs[8:1])
+bp
 
-lista.sp <- sp.10km[!duplicated(sp.10km$nome_cient), ]
-table(lista.sp$categoria)
+
+df
+
+## line plot
+lp <- df[df$variable!=75,] %>%
+    ggplot(., aes(x=buffer, y=value/126, group=variable, colour=variable))+
+    geom_point() +
+    geom_line()+
+    labs(x="Buffer size (km)",
+         y="Proportion of species loss") +
+    theme_minimal()
+
+lp
 
 #### 2. creating the maps ####
 
@@ -145,6 +160,7 @@ muni.amz
 head(muni.amz)
 
 muni.tidy <- tidy(muni.amz)
+muni.tidy
 
 muni.amz$id <- row.names(muni.amz)
 
@@ -169,37 +185,18 @@ mybreaks <- c(200, 500, 1000, 1500)
 head(fire.muni.df)
 head(muni.tidy)
 
-head(fire.10km)
-
-#visualize records
-
 #png("figs/Fire_map.png", res=300, width=1800, height=1600)
-ggplot() +
-  geom_polygon(data=amz, aes(long, lat, group=group), fill="darkgreen", alpha=0.3) +
-fire.tidy <- tidy(fire.10km)
-
-mybreaks <- c(200, 500, 1000, 1500)
-sp.tidy <- tidy(sp.10km)
 
 #visualize records
 ggplot() +
-  geom_polygon(data=amz, aes(long, lat, group=group), fill="darkgreen", alpha=0.3) +
-  geom_polygon(data=fire.tidy, aes(long, lat, group=group), fill="darkred", alpha=0.3) +
-  geom_polygon(data=uc.amz[uc.amz$nome=="FLORESTA NACIONAL DO JAMANXIM",], 
-               aes(long, lat, group=group), alpha=0.3) +
-  geom_polygon(data=uc.amz[uc.amz$nome=="PARQUE NACIONAL DO ARAGUAIA",], 
-               aes(long, lat, group=group), alpha=0.3) +
-  geom_polygon(data=uc.amz[uc.amz$nome=="ESTAÇÃO ECOLÓGICA DA TERRA DO MEIO",], 
-               aes(long, lat, group=group), alpha=0.3) +
-  geom_point(aes(x=x, y=y, size=Fire_freq, col=Fire_freq),
+    geom_polygon(data=amz, aes(long, lat, group=group), fill="darkgreen", alpha=0.3) +
+    geom_point(aes(x=x, y=y, size=Fire_freq, col=Fire_freq),
              data=fire.muni.df, shape=20, stroke=FALSE) +
-  geom_point(aes(x=POINT_X, y=POINT_Y),
+    geom_point(aes(x=POINT_X, y=POINT_Y),
              data=as.data.frame(sp.10km), shape=3, stroke=FALSE) +
-  geom_point(aes(x=POINT_X, y=POINT_Y),
+    geom_point(aes(x=POINT_X, y=POINT_Y),
              data=as.data.frame(sp.10km), shape=3, stroke=FALSE) +
-  # geom_point(aes(x=lon, y=lat, size=riq, color=riq, alpha=riq), shape=20, stroke=FALSE) +
-  #scale_color_gradient(low="orange", high="red") +
-  scale_color_gradientn(colours = heat.colors(4)[4:1], name="Fire frequency",  breaks=mybreaks) +
+    scale_color_gradientn(colours = heat.colors(4)[4:1], name="Fire frequency",  breaks=mybreaks) +
   # geom_point(aes(x=lon, y=lat, size=riq, color=riq, alpha=riq), shape=20, stroke=FALSE) +
   #scale_color_gradient(low="orange", high="red") +
   scale_color_gradientn(colours = heat.colors(5)[5:1]) +

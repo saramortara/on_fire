@@ -141,6 +141,11 @@ sp.10km <- sp.amz[fire.10km,]
 length(unique(sp.10km$nome_cient))
 dim(sp.10km)
 
+writeOGR(sp.10km, 
+         "data/shapefile/outputs", 
+         "sp_10km", 
+         driver="ESRI Shapefile", overwrite_layer = TRUE)
+
 registros.fogo <- as.data.frame(table(sp.10km$nome_cient))
 names(registros.fogo)[2] <- "Freq.fire"
 

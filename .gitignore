@@ -16,3 +16,5 @@ data.zip
 
 .Rproj.user
 
+# emacs backup files
+*.R~
