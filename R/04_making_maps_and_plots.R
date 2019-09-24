@@ -1,6 +1,8 @@
 # loading packages
 library(ggplot2)
+library(gridExtra)
 library(viridis)
+library(awtools)
 ###### Making a cool map #####
 library(tidyverse)
 library(sf)
@@ -15,6 +17,8 @@ library(rgeos)
 
 library(caret)
 library(reshape2)
+
+library(wesanderson)
 
 ##### 1. reading shapefiles ####
 
@@ -74,101 +78,188 @@ df <- melt(prop.mat, id.vars="buffer")
 df2 <- melt(prop.mat2[,-1], id.vars="categoria")
 df2$buffer <- prop.mat2$buffer
 
+df2$variable <- gsub("1", "> 0", df2$variable)
+df$variable <- gsub("1", "> 0", df$variable)
+
+
 head(df2)
 
 
 #### 1. making plots ####
 
-cores <- c("grey30", wesanderson::wes_palette("Zissou1", 4, type = "continuous"))
-#cores <- wesanderson::wes_palette("Zissou1", 5, type = "continuous")
+#cores <- wes_palette("Cavalcanti1")[c(2,4,3)]
+cores <- a_palette[1:3]
+cores
 
 ## barplot
 bp <- df2[df2$variable!=75 & df2$buffer==10,] %>%
     ggplot(., aes(fill=categoria, x=variable, y=value/126)) +
     geom_bar(position="fill", stat="identity") +
-    labs(x="Loss of species records",
-         y="Proportion of species in threatened categories") +
-    theme_minimal()
+    scale_fill_manual("Category",
+                      values=cores) +
+    labs(y="Species' threatened category",
+         x="Percentage of lost records") +
+    theme_minimal() +
+    #ggtitle("B")+  ## Impact of 10 km buffer on endangered species)+
+    theme(legend.title = element_text(size = 7),
+          legend.text = element_text(size = 7))
 
-bp
+bp + coord_flip()
 
 
 df
 
+colo <- wes_palette("GrandBudapest1")[2]
+
+#pal <- wes_palette("IsleofDogs1", 4)
+
+lcor <- cartography::carto.pal('grey.pal', 4)[4:1]
+lcor
+
 ## line plot
 lp <- df[df$variable!=75,] %>%
     ggplot(., aes(x=buffer, y=value/126, group=variable, colour=variable))+
+                                        #scale_colour_grey("% of lost records") +
+    scale_colour_manual("% of lost records",values=lcor) +
+    geom_vline(xintercept=10, colour=colo, linetype="dashed")+
+    geom_hline(yintercept=0.50, colour=colo, linetype="dashed") +
     geom_point() +
     geom_line()+
     labs(x="Buffer size (km)",
-         y="Proportion of species loss") +
-    theme_minimal()
+         y="Percentage of species loss") +
+    theme_minimal() +
+    theme(legend.position=c(0.83,0.12),
+          legend.title = element_text(size = 7),
+          legend.text = element_text(size = 7))
+    #ggtitle("C")
 
 lp
 
-#### 2. creating the maps ####
+#### 2. creating the map ####
 
-
-# 2.1 Fire by municipality ####
-#### creating map ####
-
+## manipulating data
 fire.muni.df <- aggregate(SCAN ~ NOME_MUNI, data=fire.muni, FUN=length)
 
 head(fire.muni.df)
 dim(fire.muni)
 dim(fire.muni.df)
 
-hist(fire.muni.df$SCAN, plot=FALSE)
-
-# getting county centroids 
-
+### getting county centroids 
 head(muni.amz)
 
 my.muni <- muni.amz[muni.amz$NOME_MUNI%in%fire.muni.df$NOME_MUNI,]
-
-as.character(my.muni$NOME_MUNI)
-
 muniCentroids <- gCentroid(my.muni,byid=TRUE)
-plot(muni.amz)
-points(muniCentroids,pch=19, col="red")
+#plot(muni.amz)
+#points(muniCentroids,pch=19, col="red")
 
 muniCentroids.df <- data.frame(NOME_MUNI=as.character(my.muni$NOME_MUNI), 
                                muniCentroids@coords)
 
 fire.muni.df <- merge(fire.muni.df, muniCentroids.df, by="NOME_MUNI")
-
-dim(fire.muni.df)
-
 head(fire.muni.df)
 names(fire.muni.df)[2] <- "Fire_freq"
-
-dim(muni.amz)
 
 muni.amz2 <- merge(as.data.frame(muni.amz), fire.muni.df[,1:2], by="NOME_MUNI", 
                    all.x=TRUE, all.y=FALSE)
 
 muni.amz2 <- muni.amz2[!duplicated(muni.amz2),]
 
-dim(muni.amz2)
-
 muni.amz$Fire_freq <- muni.amz2$Fire_freq
 
-head(muni.amz)
 
-muni.amz
+#png("figs/Fire_map.png", res=300, width=1800, height=1600)
 
-head(muni.amz)
+cores
 
+fogo.cor <- cartography::carto.pal('orange.pal', 5)
+
+mybreaks <- c(500, 700, 1000, 1500, 1800)
+
+#visualize records
+map <- ggplot() +
+    geom_polygon(data=amz, aes(long, lat, group=group), fill=cores[3], alpha=0.7) +
+    geom_point(aes(x=x, y=y, size=Fire_freq, col=Fire_freq),
+             data=fire.muni.df, shape=20, stroke=FALSE) +
+    geom_point(aes(x=POINT_X, y=POINT_Y),
+               data=as.data.frame(sp.10km), shape=3) +
+    scale_color_gradientn(colours = fogo.cor, name="Fire frequency",  breaks=mybreaks) +
+                                        #scale_color_gradient(low="orange", high="red") +
+                                        #scale_color_gradientn(colours = heat.colors(5)[5:1]) +
+                                        #scale_color_distiller(palette = "Reds", direction = 1, name="Fire frequency") +
+    #scale_size_continuous(name="Fire frequency",  breaks=mybreaks) +
+    scale_size_area(max_size=15, name="Fire frequency", breaks=mybreaks) +
+                                        #scale_size_continuous(name="Number of fires") +
+                                        #scale_alpha_continuous(name="Number of fires", breaks=mybreaks) +
+    theme_minimal()  + 
+    labs(x="Longitude", y="Latitude") +
+    coord_map() + 
+    guides( colour = guide_legend()) +
+    theme(legend.position=c(0.97,0.12),
+          legend.title = element_text(size = 7),
+          legend.text = element_text(size = 7)) +
+     ggtitle("A")
+#dev.off()
+
+map
+
+####################################################
+#### juntando todas as figuras em uma #############
+####################################################
+
+bp + coord_flip()
+lp
+map
+
+A <- theme(text = element_text(size=20),
+           legend.title = element_text(size = 12),
+           legend.text = element_text(size = 12))
+
+BC <- theme(text = element_text(size=15),
+            legend.title = element_text(size = 10),
+            legend.text = element_text(size = 10))
+
+# 4000 e 2000
+png("figs/combined_fig.png", res=300, width=4100, height=2100)
+grid.arrange(map + A,
+             lp + ggtitle("B") + BC,
+             bp + coord_flip() + ggtitle("C") + BC,
+             ncol=3,
+             nrow=3,
+             widths=c(10,8,8),
+             layout_matrix=rbind(c(1,1,2),
+                                 c(1,1,2),
+                                 c(1,1,3)))
+dev.off()
+
+# 3000 e 3000
+png("figs/combined_fig_vertical.png", res=300, width=3000, height=3400)
+grid.arrange(map + A,
+             lp + ggtitle("B") + BC,
+             bp + coord_flip() + ggtitle("C") + BC,
+             #ncol=4,
+             #nrow=5,
+             #widths=c(10, 2, 2, 2),
+             heights=c(5,5,5,7,1),
+             layout_matrix=rbind(c(1, 1),
+                                 c(1, 1),
+                                 c(1, 1),
+                                 #c(2, NA),
+                                 c(2, 3),
+                                 c(2, NA)))
+dev.off()
+
+
+map
+
+######################################################
+#### outras coisas ###################################
+######################################################
+                                        # do not run :P
+
+### teste com o poligono dos municipios ### 
 muni.tidy <- tidy(muni.amz)
-muni.tidy
-
 muni.amz$id <- row.names(muni.amz)
-
-head(muni.amz)
-
 muni.tidy <- dplyr::left_join(muni.tidy, muni.amz@data)
-
-head(muni.tidy)
 
 pal <- wesanderson::wes_palette("Zissou1", 100, type = "continuous")
 
@@ -180,39 +271,9 @@ ggplot(muni.tidy, aes(x = long, y = lat, group = group, fill=Fire_freq)) +
   labs(title = "Fire in the Brazilian Amazon") 
   # theme(plot.title = element_text(margin = margin(t = 60, b = -40)))
 
-mybreaks <- c(200, 500, 1000, 1500)
+mybreaks <- c(200, 500, 700, 1000, 1500)
 
-head(fire.muni.df)
-head(muni.tidy)
-
-#png("figs/Fire_map.png", res=300, width=1800, height=1600)
-
-#visualize records
-ggplot() +
-    geom_polygon(data=amz, aes(long, lat, group=group), fill="darkgreen", alpha=0.3) +
-    geom_point(aes(x=x, y=y, size=Fire_freq, col=Fire_freq),
-             data=fire.muni.df, shape=20, stroke=FALSE) +
-    geom_point(aes(x=POINT_X, y=POINT_Y),
-             data=as.data.frame(sp.10km), shape=3, stroke=FALSE) +
-    geom_point(aes(x=POINT_X, y=POINT_Y),
-             data=as.data.frame(sp.10km), shape=3, stroke=FALSE) +
-    scale_color_gradientn(colours = heat.colors(4)[4:1], name="Fire frequency",  breaks=mybreaks) +
-  # geom_point(aes(x=lon, y=lat, size=riq, color=riq, alpha=riq), shape=20, stroke=FALSE) +
-  #scale_color_gradient(low="orange", high="red") +
-  scale_color_gradientn(colours = heat.colors(5)[5:1]) +
-  #scale_color_distiller(palette = "Reds", direction = 1, name="Fire frequency") +
-  scale_size_continuous(name="Fire frequency",  breaks=mybreaks) +
-  #scale_size_continuous(name="Number of fires") +
-  #scale_alpha_continuous(name="Number of fires", breaks=mybreaks) +
-  theme_minimal()  + 
-  labs(x="Longitude", y="Latitude") +
-  coord_map() + 
-  #guides( colour = guide_legend()) +
-  ggtitle("Fire activity in the Brazilian Amazon")
-#dev.off()
-
-
-# 5.2. Records inside buffer ####
+# Records inside buffer ####
 
 aoo.fogo
 
@@ -232,55 +293,6 @@ ggplot() +
              colour = "yellow",
              alpha = 0.3) +
   coord_fixed()
-
-#png("figs/Fire_map_buffer.png", res=300, width=1800, height=1600)
-ggplot() +
-  geom_polygon(data=amz, aes(long, lat, group=group), fill="darkgreen", alpha=0.3) +
-  geom_polygon(data=fire.10km, aes(long, lat, group=group), fill="white", colour="white", alpha=0.3) +
-  geom_polygon(data=fire.10km, aes(long, lat, group=group), fill="yellow", colour="yellow", alpha=0.3) +
-  geom_point(aes(x=LONGITUDE, y=LATITUDE),
-             data=as.data.frame(fire.muni), shape=46, stroke=FALSE, fill="darkred", colour="darkred") +
-  geom_point(aes(x=POINT_X, y=POINT_Y),
-             data=as.data.frame(sp.10km), shape=3, stroke=FALSE) +
-  # theme(
-  #   legend.position = c(0.15, 0.2),
-  #   text = element_text(color = "#22211d"),
-  #   #plot.background = element_rect(fill = "#f5f5f2", color = NA), 
-  #   #panel.background = element_rect(fill = "#f5f5f2", color = NA), 
-  #   #legend.background = element_rect(fill = "#f5f5f2", color = NA),
-  #   plot.title = element_text(size= 16, hjust=0.1, color = "#4e4d47", margin = margin(b = -0.1, t = 0.4, l = 2, unit = "cm")),
-  # )  
-
-
-
-
-ggplot() +
-  geom_polygon(data=amz, aes(long, lat, group=group), fill="darkgreen", alpha=0.3) +
-  geom_polygon(data=fire.tidy, aes(long, lat, group=group), fill="darkred", alpha=0.5) +
-  geom_polygon(data=uc.amz, 
-                aes(long, lat, group=group), alpha=0.3) +
-  # geom_polygon(data=uc.amz[uc.amz$nome=="PARQUE NACIONAL DO ARAGUAIA",], 
-  #              aes(long, lat, group=group), alpha=0.3) +
-  # geom_polygon(data=uc.amz[uc.amz$nome=="ESTAÇÃO ECOLÓGICA DA TERRA DO MEIO",], 
-  #              aes(long, lat, group=group), alpha=0.3) +
-  # geom_point(aes(x=x, y=y, size=Fire_freq, col=Fire_freq),
-  #            data=fire.muni.df, shape=20, stroke=FALSE) +
-  geom_point(aes(x=POINT_X, y=POINT_Y),
-             data=as.data.frame(sp.10km), shape=3, stroke=FALSE) +
-  # geom_point(aes(x=lon, y=lat, size=riq, color=riq, alpha=riq), shape=20, stroke=FALSE) +
-  #scale_color_gradient(low="orange", high="red") +
-  #scale_color_gradientn(colours = heat.colors(5)[5:1]) +
-  #scale_color_distiller(palette = "Reds", direction = 1, name="Fire frequency") +
-  #scale_size_continuous(name="Fire frequency",  breaks=mybreaks) +
-  #scale_size_continuous(name="Number of fires") +
-  #scale_alpha_continuous(name="Number of fires", breaks=mybreaks) +
-  theme_minimal()  + 
-  labs(x="Longitude", y="Latitude") +
-  coord_map() + 
-  #guides( colour = guide_legend()) +
-  ggtitle("Fire activity in the Brazilian Amazon")
-
-
 
 ggplot() +
   geom_polygon(data = amz, aes(x=long, y = lat, group = group), fill="forestgreen", alpha=0.3) +
