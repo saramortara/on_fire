@@ -26,7 +26,7 @@ fire.muni <- readOGR("data/shapefile/outputs/fire_amz80_muni.shp",
                      encoding = "UTF-8")
 
 
-fire <- raster("data/raster/fire_raster.tif")
+#fire <- raster("data/raster/fire_raster.tif")
 
 # plot(amz)
 # plot(uc.amz, add=TRUE, col="grey60")
@@ -34,13 +34,17 @@ fire <- raster("data/raster/fire_raster.tif")
 
 sp <- readOGR("data/shapefile/pontos_ameacadas_atualizado_portaria_443_2014/pontos_ameacadas_atualizado_portaria_443_2014.shp")
 
+dim(sp)
+head(sp)
+length(unique(sp$nome_cient))
+
 proj4string(sp)
 proj4string(fire.muni)
 proj4string(amz)
 
-amz <- spTransform(amz, CRS=CRS("+proj=longlat +datum=WGS84"))
-sp <- spTransform(sp, CRS=CRS("+proj=longlat +datum=WGS84"))
-fire.muni <- spTransform(fire.muni, CRS=CRS("+proj=longlat +datum=WGS84"))
+amz <- spTransform(amz, CRS = CRS("+proj=longlat +datum=WGS84"))
+sp <- spTransform(sp, CRS = CRS("+proj=longlat +datum=WGS84"))
+fire.muni <- spTransform(fire.muni, CRS = CRS("+proj=longlat +datum=WGS84"))
 
 sp.amz <- sp[amz,]
 
@@ -51,9 +55,9 @@ plot(sp.amz)
 #### 2. Checking species data #### 
 
 # 2.1 checking endemic species ####
-sp.fora <- sp[!sp$codigocncf%in%sp.amz$codigocncf,]
+sp.fora <- sp[!sp$codigocncf %in% sp.amz$codigocncf,]
 
-sum(sp.fora$codigocncf%in%sp.amz$codigocncf)
+sum(sp.fora$codigocncf %in% sp.amz$codigocncf)
 
 sp.restritas <- setdiff(sp.amz$nome_cient, sp.fora$nome_cient) %>% 
   length()
@@ -62,10 +66,10 @@ sp.tot <- unique(sp.amz$nome_cient) %>% length()
 
 sp.restritas/sp.tot
 
-nrow(sp.fora)+nrow(sp.amz)
+nrow(sp.fora) + nrow(sp.amz)
 nrow(sp)
 
-dim(sp.fora)+dim(sp.amz)
+dim(sp.fora) + dim(sp.amz)
 dim(sp)
 
 sp.amz$nome_cient <- as.character(sp.amz$nome_cient)
@@ -80,8 +84,6 @@ head(registros.amz)
 
 head(sp.amz)
 
-head()
-
 df <- sp.amz@data 
 
 head(df)
@@ -91,14 +93,14 @@ nome.cat <- df[!duplicated(df$nome_cient), c('nome_cient', 'categoria')]
 head(nome.cat)
 
 write.table(nome.cat, "results/especie_categoria.csv",
-            row.names=FALSE,
-            col.names=TRUE)
+            row.names = FALSE,
+            col.names = TRUE)
 
 # 2.2 Calculating AOO ####
 c.aoo <- 4
 r.aoo <- sqrt(c.aoo/pi)*1000 
 
-sp.aoo <- raster::buffer(sp.amz, width=r.aoo, dissolve=TRUE)
+sp.aoo <- raster::buffer(sp.amz, width = r.aoo, dissolve = TRUE)
 
 plot(sp.aoo)
 
@@ -125,7 +127,7 @@ fire.10km <- buffer(fire.muni, width = b3, dissolve = TRUE)
 # 3.1. Creating multiple buffers ####
 
 bufs <- function(b) {
-  my.buf <- buffer(fire.muni, width=b, dissolve=TRUE)
+  my.buf <- buffer(fire.muni, width = b, dissolve = TRUE)
 }
 
 bs <- c(1000, 1500, 2000, 3000, 5000, 7000, 10000, 14000)
@@ -144,7 +146,7 @@ dim(sp.10km)
 writeOGR(sp.10km, 
          "data/shapefile/outputs", 
          "sp_10km", 
-         driver="ESRI Shapefile", overwrite_layer = TRUE)
+         driver = "ESRI Shapefile", overwrite_layer = TRUE)
 
 registros.fogo <- as.data.frame(table(sp.10km$nome_cient))
 names(registros.fogo)[2] <- "Freq.fire"
