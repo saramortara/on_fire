@@ -179,8 +179,6 @@ lp <- df[df$variable != 75, ] %>%
   labs(x = "Distance from fire spots (km)",
        y = "Percentage of species loss") +
   theme_classic() +
-  labs(y = "Proportion of species loss",
-       x = "Percentage of lost distribution") +
   xlim(c(0, 14)) +
   ylim(c(0, 0.57)) +
   theme(text = element_text(size = 15),
