@@ -9,10 +9,10 @@ library(maps)
 library(stringr)
 
 # reading legal amazon shp
-amz <- readOGR("data/shapefile/brazilian_legal_amazon/brazilian_legal_amazon.shp",                
+amz <- readOGR("data/shapefile/brazilian_legal_amazon/brazilian_legal_amazon.shp",
                use_iconv = TRUE, 
                encoding = "UTF-8")
-uc.amz <-readOGR("data/shapefile/outputs/uc_amz.shp",
+uc.amz <- readOGR("data/shapefile/outputs/uc_amz.shp",
                  use_iconv = TRUE, 
                  encoding = "UTF-8")
 # uc

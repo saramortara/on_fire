@@ -39,7 +39,7 @@ sp.10km <- readOGR("data/shapefile/outputs/sp_10km.shp",
 
 fire <- raster("data/raster/fire_raster.tif")
 
-SA <- readOGR('data/shapefile/SA/SouthAmerica.shp')
+SA <- readOGR('data/shapefile/SA/South_America.shp')
 
 # plot(amz)
 # plot(uc.amz, add=TRUE, col="grey60")
@@ -303,6 +303,51 @@ print(SAmap, vp = vp_inset)
 dev.off()
 
 map
+
+######################################################
+#### infografico #####################################
+######################################################
+# not using https://github.com/liamgilbey/ggwaffle
+# based on https://www.listendata.com/2019/06/create-infographics-with-r.html
+
+info <- df2[df2$variable != 75 & df2$buffer == 10 & df2$variable == "> 0", 
+            c("categoria", "value")]
+info$total <- c(17, 55, 54)
+info$label <- fontawesome('fa-twitter')
+info$prop <- round(info$value/info$total, 2)*100
+
+library(echarts4r)
+library(echarts4r.assets)
+
+category <- data.frame(category = as.character(info$categoria), 
+                       value = info$prop, 
+                       path = rep("path://M15.787 7.531c-5.107 2.785-12.72 9.177-15.787 15.469h2.939c.819-2.021 2.522-4.536 3.851-5.902 8.386 3.747 17.21-2.775 17.21-11.343 0-1.535-.302-3.136-.92-4.755-2.347 3.119-5.647 1.052-10.851 1.625-7.657.844-11.162 6.797-8.764 11.54 3.506-3.415 9.523-6.38 12.322-6.634z", 3))
+
+category %>% 
+  e_charts(category) %>% 
+  e_x_axis(splitLine = list(show = FALSE),
+           axisTick = list(show = FALSE),
+           axisLine = list(show = FALSE),
+           axisLabel = list(show = FALSE)) %>%
+  e_y_axis(max = 100,
+           splitLine = list(show = FALSE),
+           axisTick = list(show = FALSE),
+           axisLine = list(show = FALSE),
+           axisLabel = list(show = FALSE)) %>%
+  e_color(color = c('#fd5200ff', '#b7cdb7ff')) %>%
+  e_pictorial(value, symbol = path, z = 10, name = 'realValue',
+              symbolBoundingData = 100, symbolClip = TRUE) %>% 
+  e_pictorial(value, symbol = path, name = 'background',
+              symbolBoundingData = 100) %>% 
+  e_labels(position = "bottom", offset = c(0, 10),
+           textStyle = list(fontSize = 20,
+                            fontFamily = 'Arial',
+                            fontWeight = 'bold',
+                            color = '#fd5200ff'),
+           formatter = "{@[1]}% {@[0]}") %>%
+  e_legend(show = FALSE) %>%
+  e_theme("westeros")
+
 
 ######################################################
 #### outras coisas ###################################
