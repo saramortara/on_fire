@@ -140,18 +140,20 @@ bp <- df2[df2$variable != 75 & df2$buffer == 10, ] %>%
                     values = cores) +
   theme_classic() +
   #ggtitle("B")+  ## Impact of 10 km buffer on endangered species)+
-  labs(y = "Proportion of species loss",
+  labs(y = "Proportion of species loss ",
        x = "Percentage of lost distribution") +
-  theme(text = element_text(size = 15),
-        legend.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
+  theme(text = element_text(size = 9),
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7),
         axis.text.x = element_text(),
-        axis.text.y = element_text())
-#legend.position = c(0.5, 0.985),
-#legend.direction = "horizontal")
+        axis.text.y = element_text(),
+        legend.position = c(0.5, 0.985),
+        legend.direction = "horizontal")
 
-
+pdf("figs/c_barplot.pdf", #res = 300, units = "cm", 
+    width = 4.5, height = 6.5)    
 bp + coord_flip()
+dev.off()  
 
 colo <- wes_palette("GrandBudapest1")[2]
 
@@ -167,7 +169,7 @@ lp <- df[df$variable != 75, ] %>%
     colour = variable
   )) +
   #scale_colour_grey("% of lost records") +
-  scale_colour_manual("% of lost records", values = lcor) +
+  scale_colour_manual(" % of lost records", values = lcor) +
   geom_vline(xintercept = 10,
              colour = colo,
              linetype = "dashed") +
@@ -181,17 +183,19 @@ lp <- df[df$variable != 75, ] %>%
   theme_classic() +
   xlim(c(0, 14)) +
   ylim(c(0, 0.57)) +
-  theme(text = element_text(size = 15),
-    legend.position = c(0.5, 1),
-    legend.title = element_text(size = 10),
-    legend.text = element_text(size = 10),
+  theme(text = element_text(size = 9),
+    legend.position = c(0.4, 1),
+    legend.title = element_text(size = 7),
+    legend.text = element_text(size = 7),
     axis.text.x = element_text(),
     axis.text.y = element_text(),
     #legend.position = c(0.5, 0.985),
     legend.direction = "horizontal")
 
-    
-  lp
+png("figs/b_lineplot.png", res = 300, units = "cm", 
+    width = 6.5, height = 6.5 )    
+lp
+dev.off()  
 
 #### 2. creating the map ####
 
@@ -236,12 +240,12 @@ SAmap <- ggplot() +
   geom_polygon(data = amz, aes(long, lat, group = group),
                fill = cores[3],
                alpha = 0.7) + theme_void() +
-  annotate(geom = "text", x = -60, y = -25, label = "South \n America", 
-           color = "grey90", size = 3) #+
-#annotate(geom = "text", x = -59, y = -7, label = "Brazilian Amazon", 
-#    color = "grey90", size = 1.5)
+#  annotate(geom = "text", x = -60, y = -25, label = "South \n America", 
+#           color = "grey90", size = 3) #+
 
+pdf("figs/inset_map_SA.pdf")  
 SAmap 
+dev.off()
 
 #visualize records
 map <- ggplot() +
@@ -249,9 +253,9 @@ map <- ggplot() +
                fill = cores[3], alpha = 0.7) +
   geom_point(aes(x = x, y = y, size = Fire_freq, col = Fire_freq),
              data = fire.muni.df, shape = 20, stroke = FALSE) +
-  geom_point(aes(x = POINT_X, y = POINT_Y, shape = endemicas),
-             data = as.data.frame(sp.10km)) +
-  scale_shape_manual(values = c(5, 3), name = "Species records") +
+  geom_point(aes(x = POINT_X, y = POINT_Y), #, shape = endemicas),
+             data = as.data.frame(sp.10km), pch = 3) +
+  #scale_shape_manual(values = c(5, 3), name = "Species records") +
   scale_color_gradientn(colours = fogo.cor, name = "Number of fires",
                         breaks = mybreaks) +
   #scale_color_gradient(low="orange", high="red") +
@@ -268,14 +272,18 @@ map <- ggplot() +
   guides(colour = guide_legend()) +
   theme(#axis.text.x=element_text(),
     #axis.text.y=element_text(),
-    legend.position = c(0.98, 0.17),
-    text = element_text(size = 20),
-    legend.title = element_text(size = 12),
-    legend.text = element_text(size = 12)) +
-  ggtitle("A")
-#dev.off()
-
+    legend.position = c(0.5, 0),
+    text = element_text(size = 16),
+    legend.title = element_text(size = 7),
+    legend.text = element_text(size = 7), 
+    legend.direction = "horizontal")
+  #ggtitle("A")
 map
+
+pdf("figs/a_map.pdf", #res = 300, units = "cm", 
+    width = 11.5, height = 13)
+map
+dev.off()
 
 ####################################################
 #### juntando todas as figuras em uma #############
@@ -333,7 +341,7 @@ my_plot <- category %>%
            axisTick = list(show = FALSE),
            axisLine = list(show = FALSE),
            axisLabel = list(show = FALSE)) %>%
-  e_color(color = c('#fd5200ff', '#b7cdb7ff')) %>%
+  e_color(color = c('#fa2100ff', '#b7cdb7ff')) %>%
   e_pictorial(value, symbol = path, z = 10, name = 'realValue',
               symbolBoundingData = 100, symbolClip = TRUE) %>% 
   e_pictorial(value, symbol = path, name = 'background',
@@ -342,12 +350,13 @@ my_plot <- category %>%
            textStyle = list(fontSize = 20,
                             fontFamily = 'Arial',
                             fontWeight = 'bold',
-                            color = '#fd5200ff'),
+                            color = '#fa2100ff'),
            formatter = "{@[1]}% {@[0]}") %>%
   e_legend(show = FALSE) %>%
   e_theme("westeros")
 
 # saved using export button in rstudio :facepalm: 800 x 296
+my_plot
 
 ######################################################
 #### outras coisas ###################################
@@ -399,9 +408,9 @@ library(rasterVis)
 
 myTheme <- rasterTheme(region = rev(heat.colors(n = 20)[1:11]))
 
-levelplot(fire, contour = FALSE, margin=FALSE, par.settings=myTheme) +
+levelplot(fire, contour = FALSE, margin = FALSE, par.settings = myTheme) +
   layer(sp.polygons(amz)) + 
-  layer(sp.polygons(sp.10km, shape=19))
+  layer(sp.polygons(sp.10km, shape = 19))
 
 ggplot() +
   #geom_tile(fire, interpolate = TRUE) +
@@ -411,7 +420,8 @@ ggplot() +
   coord_fixed()
 
 ggplot() +
-  geom_polygon(data = amz, aes(x=long, y = lat, group = group), fill="forestgreen", alpha=0.3) +
+  geom_polygon(data = amz, aes(x = long, y = lat, group = group), 
+               fill = "forestgreen", alpha = 0.3) +
   geom_point(data = as.data.frame(fire.9km2), aes(x = LONGITUDE, y = LATITUDE),
              colour = "darkred", size = 0.5)
 
