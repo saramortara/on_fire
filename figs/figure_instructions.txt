@@ -1,0 +1,6 @@
+Final figure was built using Inkscape following these steps:
+
+- import a_map.pdf (for figure legend), a_map.png (for map), b_lineplot.png, infographic.png 
+- crop only images and add text to infographic by hand
+- crop legend from graphic b and center to new b figure
+
