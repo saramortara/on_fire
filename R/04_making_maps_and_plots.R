@@ -150,10 +150,10 @@ bp <- df2[df2$variable != 75 & df2$buffer == 10, ] %>%
         legend.position = c(0.5, 0.985),
         legend.direction = "horizontal")
 
-pdf("figs/c_barplot.pdf", #res = 300, units = "cm", 
+#pdf("figs/c_barplot.pdf", #res = 300, units = "cm", 
     width = 4.5, height = 6.5)    
 bp + coord_flip()
-dev.off()  
+#dev.off()  
 
 colo <- wes_palette("GrandBudapest1")[2]
 
@@ -169,7 +169,7 @@ lp <- df[df$variable != 75, ] %>%
     colour = variable
   )) +
   #scale_colour_grey("% of lost records") +
-  scale_colour_manual(" % of lost records", values = lcor) +
+  scale_colour_manual(" % of records", values = lcor) +
   geom_vline(xintercept = 10,
              colour = colo,
              linetype = "dashed") +
@@ -192,8 +192,7 @@ lp <- df[df$variable != 75, ] %>%
     #legend.position = c(0.5, 0.985),
     legend.direction = "horizontal")
 
-png("figs/b_lineplot.png", res = 300, units = "cm", 
-    width = 6.5, height = 6.5 )    
+png("figs/b_lineplot.png", res = 300, units = "cm", width = 6.5, height = 6.5 )    
 lp
 dev.off()  
 
@@ -243,9 +242,9 @@ SAmap <- ggplot() +
 #  annotate(geom = "text", x = -60, y = -25, label = "South \n America", 
 #           color = "grey90", size = 3) #+
 
-pdf("figs/inset_map_SA.pdf")  
+#pdf("figs/inset_map_SA.pdf")  
 SAmap 
-dev.off()
+#dev.off()
 
 #visualize records
 map <- ggplot() +
@@ -280,10 +279,10 @@ map <- ggplot() +
   #ggtitle("A")
 map
 
-pdf("figs/a_map.pdf", #res = 300, units = "cm", 
+#pdf("figs/a_map.pdf", #res = 300, units = "cm", 
     width = 11.5, height = 13)
 map
-dev.off()
+#dev.off()
 
 ####################################################
 #### juntando todas as figuras em uma #############
@@ -293,7 +292,7 @@ dev.off()
 vp_inset <- grid::viewport(width = 0.3, height = 0.25, x = 0.000001, y = 1.01, just = c("left", "top"))
 
 
-png("figs/combined_fig_vertical.png", res = 300, width = 3000, height = 3400)
+#png("figs/combined_fig_vertical.png", res = 300, width = 3000, height = 3400)
 grid.arrange(map,
              lp + ggtitle("B"),
              bp + coord_flip() + ggtitle("C"),
@@ -308,7 +307,7 @@ grid.arrange(map,
                                    c(2, 3),
                                    c(2, NA)))
 print(SAmap, vp = vp_inset)
-dev.off()
+#dev.off()
 
 map
 
@@ -364,7 +363,7 @@ my_plot
                                         # do not run :P
 
 # 4000 e 2000
-png("figs/combined_fig.png", res = 300, width = 4100, height = 2100)
+#png("figs/combined_fig.png", res = 300, width = 4100, height = 2100)
 grid.arrange(map,
              lp + ggtitle("B"),
              bp + coord_flip() + ggtitle("C"),
@@ -377,7 +376,7 @@ grid.arrange(map,
                                    c(1, 1, 3),
                                    c(1, 1, 3)))
 
-dev.off()
+#dev.off()
 
 
 
